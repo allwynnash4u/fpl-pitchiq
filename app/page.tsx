@@ -1,20 +1,13 @@
-"use client";
-import {useState} from "react";
-type Player={id:number;name:string;position:string;price:number;team:string;status:string};
-type Opportunity={sell:string;buy:string;position:string;netExpectedGain:number;gain3:number;gain6:number;confidence:number;hitCost:number;bankAfter:number;reason:string;risk:string;horizon:string};
-type Result={teamId:number;event:number;deadline:string;retrievedAt:string;bank:number;freeTransfers:number;players:Player[];opportunities:Opportunity[];baseline:{action:string;reason:string};model:{version:string;calibration:string}};
-export default function Home(){
- const [teamId,setTeamId]=useState(""); const [data,setData]=useState<Result|null>(null); const [loading,setLoading]=useState(false); const [error,setError]=useState("");
- async function analyze(){setError("");const id=Number(teamId);if(!Number.isInteger(id)||id<=0){setError("Enter a valid public FPL Team ID.");return}setLoading(true);try{const r=await fetch("/api/team/"+id,{cache:"no-store"});const d=await r.json();if(!r.ok)throw new Error(d.error||"Unable to load that team.");setData(d)}catch(e){setError(e instanceof Error?e.message:"Unable to load team.")}finally{setLoading(false)}}
- return <main><header className="topbar"><div className="brand"><span className="mark">IQ</span>FPL PitchIQ</div><span className="status">LIVE FPL DATA</span></header>
- <section className="hero"><div className="eyebrow">DECISION ENGINE · EXPLAINABLE FPL</div><h1>Your best FPL move,<br/><em>explained.</em></h1><p>Import your squad and compare actual transfer opportunities against the Roll / Do Nothing baseline.</p><div className="import"><label htmlFor="team">Public FPL Team ID</label><div className="inputrow"><input id="team" inputMode="numeric" value={teamId} onChange={e=>setTeamId(e.target.value)} placeholder="e.g. 1234567"/><button onClick={analyze} disabled={loading}>{loading?"Analyzing…":"Analyze my team"}</button></div><small>No FPL password required.</small></div>{error&&<div className="error">{error}</div>}</section>
- <section className="trust"><div><b>{data?"GW "+data.event:"Dynamic GW"}</b><span>current playable event</span></div><div><b>{data?"Synced":"Awaiting squad"}</b><span>{data?"official FPL retrieval":"data freshness"}</span></div><div><b>{data?.model.version??"Live model"}</b><span>decision layer</span></div><div><b>Evidence first</b><span>no fabricated accuracy claims</span></div></section>
- {data&&<section className="dashboard"><div className="sectionhead"><div><div className="eyebrow">YOUR DECISION</div><h2>Best transfer opportunities</h2></div><span className="pill">GW {data.event}</span></div>
- <div className="card decision"><div className="cardlabel">BASELINE</div><h3>DO NOTHING</h3><p>{data.baseline.reason}</p><div className="metrics"><span><b>{data.freeTransfers}</b><small>Free transfers</small></span><span><b>£{data.bank.toFixed(1)}m</b><small>Bank</small></span><span><b>{data.opportunities.length}</b><small>Opportunities</small></span></div></div>
- <div className="grid">{data.opportunities.map((o,i)=><article className="card" key={i}><div className="cardlabel">#{i+1} · {o.position}</div><h3>SELL {o.sell} → BUY {o.buy}</h3><div className="metrics"><span><b>+{o.netExpectedGain}</b><small>Net expected</small></span><span><b>{Math.round(o.confidence*100)}%</b><small>Confidence</small></span><span><b>{o.hitCost?"-£"+o.hitCost:"No hit"}</b><small>Transfer cost</small></span></div><p><b>{o.reason}.</b> {o.risk}.</p><small>1 GW +{o.netExpectedGain} · 3 GW +{o.gain3} · 6 GW +{o.gain6} · Bank after £{o.bankAfter.toFixed(1)}m · {o.horizon}</small></article>)}</div>
- <div className="card roster"><h3>Imported squad</h3>{data.players.map(p=><div className="player" key={p.id}><span><b>{p.name}</b><small>{p.position} · {p.team} · {p.status}</small></span><span>£{p.price.toFixed(1)}m</span></div>)}</div>
- <p className="muted">Data retrieved {new Date(data.retrievedAt).toLocaleString()} · {data.model.calibration}. The live web layer is intentionally not presented as statistically calibrated until historical pre-deadline evaluation is connected.</p>
- </section>}
- <section className="how"><div><div className="eyebrow">HOW IT WORKS</div><h2>Import → Compare → Decide</h2></div><div className="steps"><article><b>01</b><h3>Import</h3><p>Use your public Team ID. No password and no credentials stored.</p></article><article><b>02</b><h3>Compare</h3><p>Rank legal same-position replacements against rolling.</p></article><article><b>03</b><h3>Decide</h3><p>See gain, risk, hit cost, bank impact and planning horizon.</p></article></div></section>
- <section className="trustbox"><div className="eyebrow">MODEL PERFORMANCE</div><h2>Evidence before accuracy claims.</h2><p>No marketing accuracy score until walk-forward backtesting has enough completed pre-deadline forecasts.</p><a href="/model-performance">Read the methodology →</a></section><footer><span>FPL PitchIQ</span><span>Public Team ID only · No FPL password required</span></footer></main>
+export default function Home() {
+  const engineUrl = (process.env.NEXT_PUBLIC_FPL_ENGINE_URL || "https://pitchiq-python-production.up.railway.app").replace(/\/$/, "");
+
+  return (
+    <main style={{ minHeight: "100vh", padding: 0, margin: 0 }}>
+      <iframe
+        title="FPL PitchIQ"
+        src={engineUrl}
+        style={{ display: "block", width: "100%", height: "100vh", border: 0 }}
+      />
+    </main>
+  );
 }

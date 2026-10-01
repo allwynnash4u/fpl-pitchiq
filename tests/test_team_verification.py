@@ -29,7 +29,7 @@ class VerificationTests(unittest.TestCase):
                 transfer_optimizer=SimpleNamespace(suggestions=lambda: {"status": "ready", "suggestions": []}),
                 squad_optimizer=SimpleNamespace(optimize=lambda **_: {"status": "ready", "formation": "3-4-3", "squad": []}),
                 chip_planner=SimpleNamespace(plan=lambda **_: {"status": "ready", "summary": {"headline": "Ready"}}),
-                dashboard_service=SimpleNamespace(build=lambda **_: {"status": "ready", "decision": {"title": "Do Nothing"}}),
+                dashboard_service=SimpleNamespace(build=lambda **_: {"status": "ready", "planning_event": {"id": 4}, "manager": {"bank": 1.0, "free_transfers": 1}, "decision": {"title": "Do Nothing"}}),
                 explanation_service=SimpleNamespace(suggestions=lambda: {"questions": ["What transfer should I make?"]}),
             )
             handler = make_handler(app)
@@ -51,6 +51,10 @@ class VerificationTests(unittest.TestCase):
             self.assertTrue(all(payload["verification"]["checks"].values()))
             self.assertEqual(payload["verification"]["position_counts"], {"1": 2, "2": 5, "3": 5, "4": 3})
             self.assertEqual(payload["verification"]["max_players_per_club"], 1)
+            self.assertEqual(payload["verification"]["checks"]["current_event_present"], True)
+            self.assertEqual(payload["verification"]["checks"]["bank_present"], True)
+            self.assertEqual(payload["verification"]["checks"]["free_transfers_present"], True)
+            self.assertEqual(payload["verification"]["checks"]["do_nothing_baseline_present"], True)
             self.assertEqual(payload["chip_plan"]["status"], "ready")
             self.assertTrue(payload["assistant"]["questions"])
 

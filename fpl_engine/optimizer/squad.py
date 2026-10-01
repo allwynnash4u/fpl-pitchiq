@@ -3,6 +3,8 @@ from __future__ import annotations
 from collections import Counter
 from itertools import combinations
 from typing import Any, Iterable
+import copy
+import time
 
 from fpl_engine.data.repository import Repository
 from fpl_engine.decision_safety import data_warnings, selling_price_warnings
@@ -27,6 +29,9 @@ class SquadOptimizer:
 
     def __init__(self, repository: Repository):
         self.repository = repository
+        self._cache_key: tuple[Any, ...] | None = None
+        self._cache_value: dict[str, Any] | None = None
+        self._cache_expires_at = 0.0
 
     @staticmethod
     def _available(player: dict[str, Any]) -> bool:
@@ -340,6 +345,11 @@ class SquadOptimizer:
     ) -> dict[str, Any]:
         profile = self.repository.profile() or {}
         current_squad = self.repository.squad()
+        projection_status = self.repository.projection_status() or {}
+        squad_signature = tuple(
+            (int(player.get("id") or 0), player.get("squad_position"), player.get("selling_price"), player.get("current_price"))
+            for player in current_squad
+        )
         horizon = int(horizon_override or profile.get("horizon") or 6)
         if start_event_override is None and horizon not in {1, 3, 5, 6, 8}:
             horizon = 6
@@ -348,6 +358,14 @@ class SquadOptimizer:
         risk = str(risk_override or profile.get("risk_preference") or "balanced")
         if risk not in {"conservative", "balanced", "aggressive"}:
             risk = "balanced"
+        cache_key = (
+            projection_status.get("id"), projection_status.get("created_at"),
+            profile.get("updated_at"), profile.get("team_id"), profile.get("bank"), profile.get("free_transfers"),
+            squad_signature, horizon_override, risk_override, start_event_override,
+            search_limit_override, rebuild_mode,
+        )
+        if cache_key == self._cache_key and self._cache_value is not None and time.monotonic() < self._cache_expires_at:
+            return copy.deepcopy(self._cache_value)
         budget, budget_assumption = self._budget(profile, current_squad)
         planning_status = self.repository.status()
         planning = planning_status.get("planning_event")
@@ -484,7 +502,7 @@ class SquadOptimizer:
         blocking_warnings = data_warnings(status)
         price_warnings = selling_price_warnings(current_squad)
         warnings = [*blocking_warnings, *price_warnings]
-        return {
+        result = {
             "status": "ready",
             "decision_safety": "refresh_required" if blocking_warnings else "estimate_only" if price_warnings else "ready",
             "data_warnings": warnings,
@@ -533,3 +551,7 @@ class SquadOptimizer:
                 else "Unrestricted chip rebuild search with exact legal-XI evaluation"
             ),
         }
+        self._cache_key = cache_key
+        self._cache_value = copy.deepcopy(result)
+        self._cache_expires_at = time.monotonic() + 30.0
+        return result

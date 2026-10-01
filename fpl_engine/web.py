@@ -253,6 +253,30 @@ def make_handler(app: Application) -> type[BaseHTTPRequestHandler]:
                     if selected_risk is not None:
                         optimizer_options["risk_override"] = selected_risk
                     self._json_response(app.squad_optimizer.optimize(**optimizer_options))
+                elif parsed.path.startswith("/api/verification/team/"):
+                    team_id = int(parsed.path.rsplit("/", 1)[-1])
+                    if team_id <= 0:
+                        raise ApiRequestError("Invalid public FPL Team ID")
+                    profile = app.repository.profile()
+                    if int(profile.get("team_id") or 0) != team_id:
+                        result = app.service.import_team(team_id, gameweek=profile.get("current_gameweek"))
+                    else:
+                        result = None
+                    profile = app.repository.profile()
+                    squad = app.repository.squad()
+                    dashboard = app.dashboard_service.build(horizon=6, risk="balanced")
+                    suggestions = app.transfer_optimizer.suggestions()
+                    optimizer = app.squad_optimizer.optimize(horizon_override=6, risk_override="balanced")
+                    self._json_response({
+                        "ok": True,
+                        "team_id": team_id,
+                        "import_result": result,
+                        "profile": profile,
+                        "squad": squad,
+                        "dashboard": dashboard,
+                        "transfer_suggestions": suggestions,
+                        "squad_optimizer": optimizer,
+                    })
                 elif parsed.path == "/api/dashboard":
                     horizon = _optional_int(query, "horizon")
                     risk = query.get("risk", [None])[0]

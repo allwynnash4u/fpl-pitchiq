@@ -5,3 +5,5 @@ dockerfilePath = "Dockerfile"
 [deploy]
 healthcheckPath = "/api/health"
 healthcheckTimeout = 10
+
+# Deploy the Python FPL engine, not the Next.js frontend.

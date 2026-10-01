@@ -267,8 +267,32 @@ def make_handler(app: Application) -> type[BaseHTTPRequestHandler]:
                     dashboard = app.dashboard_service.build(horizon=6, risk="balanced")
                     suggestions = app.transfer_optimizer.suggestions()
                     optimizer = app.squad_optimizer.optimize(horizon_override=6, risk_override="balanced")
+                    chip_plan = app.chip_planner.plan()
+                    assistant = app.explanation_service.suggestions()
+                    position_counts = {}
+                    club_counts = {}
+                    for player in squad:
+                        position = int(player.get("position_id") or 0)
+                        club = int(player.get("team_id") or 0)
+                        position_counts[position] = position_counts.get(position, 0) + 1
+                        club_counts[club] = club_counts.get(club, 0) + 1
+                    squad_shape_ok = (
+                        len(squad) == 15
+                        and position_counts == {1: 2, 2: 5, 3: 5, 4: 3}
+                        and max(club_counts.values(), default=0) <= 3
+                    )
+                    checks = {
+                        "team_id": int(profile.get("team_id") or 0) == team_id,
+                        "complete_squad": len(squad) == 15,
+                        "legal_squad_shape": squad_shape_ok,
+                        "dashboard_ready": dashboard.get("status") == "ready",
+                        "transfers_ready": suggestions.get("status") == "ready",
+                        "optimizer_ready": optimizer.get("status") == "ready",
+                        "chips_ready": chip_plan.get("status") == "ready",
+                        "assistant_ready": bool(assistant.get("questions")),
+                    }
                     self._json_response({
-                        "ok": True,
+                        "ok": all(checks.values()),
                         "team_id": team_id,
                         "import_result": result,
                         "profile": profile,
@@ -276,6 +300,13 @@ def make_handler(app: Application) -> type[BaseHTTPRequestHandler]:
                         "dashboard": dashboard,
                         "transfer_suggestions": suggestions,
                         "squad_optimizer": optimizer,
+                        "chip_plan": chip_plan,
+                        "assistant": assistant,
+                        "verification": {
+                            "checks": checks,
+                            "position_counts": position_counts,
+                            "max_players_per_club": max(club_counts.values(), default=0),
+                        },
                     })
                 elif parsed.path == "/api/dashboard":
                     horizon = _optional_int(query, "horizon")

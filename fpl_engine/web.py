@@ -185,7 +185,9 @@ def make_handler(app: Application) -> type[BaseHTTPRequestHandler]:
         def _handle_api_get(self, parsed: urllib.parse.ParseResult) -> None:
             try:
                 query = urllib.parse.parse_qs(parsed.query)
-                if parsed.path == "/api/status":
+                if parsed.path == "/api/health":
+                    self._json_response({"ok": True, "service": "fpl_engine"})
+                elif parsed.path == "/api/status":
                     self._json_response(
                         {
                             "phase": 8,

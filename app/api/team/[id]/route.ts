@@ -43,10 +43,12 @@ function positionName(value: unknown) {
 function mapEngineDashboard(teamId: number, dashboard: any, profile: any) {
   const manager = dashboard.manager || {};
   const ranking = dashboard.current_squad?.ranking || [];
-  const squad = profile?.squad || [];
+  const squad: Array<Record<string, any>> = Array.isArray(profile?.squad) ? profile.squad : [];
 
-  const byId = new Map(squad.map((player: any) => [Number(player.id), player]));
-  const players = ranking.map((row: any) => {
+  const byId = new Map<number, Record<string, any>>(
+    squad.map((player: Record<string, any>) => [Number(player.id), player])
+  );
+  const players = ranking.map((row: Record<string, any>) => {
     const source = byId.get(Number(row.id)) || {};
     return {
       id: Number(row.id),
@@ -61,7 +63,9 @@ function mapEngineDashboard(teamId: number, dashboard: any, profile: any) {
     };
   });
 
-  const suggestions = dashboard.transfers?.suggestions || [];
+  const suggestions: Array<Record<string, any>> = Array.isArray(dashboard.transfers?.suggestions)
+    ? dashboard.transfers.suggestions
+    : [];
   const opportunities = suggestions
     .filter((item: any) => item?.action === "transfer")
     .map((item: any) => ({

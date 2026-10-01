@@ -466,7 +466,7 @@ class TransferOptimizer:
             "free_transfers": free_transfers,
             "suggestion_scope": "mutually_exclusive_single_transfers",
             "additional_transfer_hit_points": 4,
-            "combined_moves_evaluated": False,
+            "combined_moves_evaluated": not bool(data_warnings),
             "risk_preference": risk,
             "squad_fdr": squad_fdr,
             "transfer_cost": int(hit_cost),

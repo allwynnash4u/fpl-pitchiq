@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fpl-ai-selector"
+version = "0.1.0"
+description = "Explainable, data-first Fantasy Premier League decision engine"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{name = "FPL AI Selector"}]
+dependencies = []
+
+[project.scripts]
+fpl-ai = "fpl_engine.cli:main"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["fpl_engine*"]
+
+[tool.setuptools.package-data]
+fpl_engine = ["static/*"]
+

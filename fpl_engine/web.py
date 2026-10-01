@@ -281,12 +281,27 @@ def make_handler(app: Application) -> type[BaseHTTPRequestHandler]:
                         and position_counts == {1: 2, 2: 5, 3: 5, 4: 3}
                         and max(club_counts.values(), default=0) <= 3
                     )
+                    planning_event = dashboard.get("planning_event")
+                    planning_event_id = planning_event.get("id") if isinstance(planning_event, dict) else planning_event
+                    manager = dashboard.get("manager") or {}
+                    transfer_items = suggestions.get("suggestions") or []
+                    hold_items = [item for item in transfer_items if item.get("action") == "do_nothing"]
+                    actionable_items = [item for item in transfer_items if item.get("action") == "transfer"]
                     checks = {
                         "team_id": int(profile.get("team_id") or 0) == team_id,
                         "complete_squad": len(squad) == 15,
                         "legal_squad_shape": squad_shape_ok,
+                        "current_event_present": planning_event_id is not None,
+                        "bank_present": isinstance(manager.get("bank"), (int, float)),
+                        "free_transfers_present": isinstance(manager.get("free_transfers"), int),
                         "dashboard_ready": dashboard.get("status") == "ready",
                         "transfers_ready": suggestions.get("status") == "ready",
+                        "transfer_safety_declared": suggestions.get("decision_safety") in {"ready", "estimate_only", "refresh_required"},
+                        "do_nothing_baseline_present": bool(hold_items),
+                        "actionable_transfer_fields_valid": all(
+                            item.get("sell") and item.get("buy") and item.get("net_expected_gain") is not None
+                            for item in actionable_items
+                        ),
                         "optimizer_ready": optimizer.get("status") == "ready",
                         "chips_ready": chip_plan.get("status") == "ready",
                         "assistant_ready": bool(assistant.get("questions")),

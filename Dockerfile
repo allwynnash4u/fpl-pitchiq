@@ -4,6 +4,7 @@ WORKDIR /app
 
 COPY fpl_engine /app/fpl_engine
 COPY README.md /app/README.md
+COPY data /app/data
 
 ENV PYTHONUNBUFFERED=1
 ENV FPL_HOST=0.0.0.0

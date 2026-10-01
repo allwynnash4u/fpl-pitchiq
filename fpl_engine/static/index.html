@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="FPL Copilot analyses your real Fantasy Premier League squad and explains the transfer, captaincy and chip decisions that improve it.">
+  <meta name="theme-color" content="#09100f">
+  <title>FPL Copilot — Your best FPL move, explained</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#overview" aria-label="FPL Copilot home">
+        <span class="brand-mark">F</span>
+        <span><strong>FPL Copilot</strong><small>Decision intelligence</small></span>
+      </a>
+      <nav aria-label="Primary navigation">
+        <button class="nav-item active" data-view="overview"><span>01</span>Dashboard</button>
+        <button class="nav-item" data-view="team"><span>02</span>My team</button>
+        <button class="nav-item" data-view="optimizer"><span>03</span>Plan & optimize</button>
+        <button class="nav-item" data-view="projections"><span>04</span>Predicted points</button>
+        <button class="nav-item" data-view="assistant"><span>05</span>Ask Copilot</button>
+        <button class="nav-item" data-view="chips"><span>06</span>Chip planner</button>
+        <button class="nav-item" data-view="backtesting"><span>07</span>Model performance</button>
+        <button class="nav-item" data-view="ledger"><span>08</span>Decision ledger</button>
+        <button class="nav-item" data-view="players"><span>09</span>Player data</button>
+        <button class="nav-item" data-view="fixtures"><span>10</span>Fixtures</button>
+        <button class="nav-item" data-view="quality"><span>11</span>Data quality</button>
+        <button class="nav-item" data-view="pricing"><span>12</span>Plans</button>
+      </nav>
+      <div class="phase-card">
+        <span class="eyebrow">Trust standard</span>
+        <strong>FPL Pitch IQ</strong>
+        <div class="progress"><i></i></div>
+        <small>Deadline-safe forecasts · rolling backtests · visible assumptions</small>
+      </div>
+    </aside>
+
+    <main id="main-content" tabindex="-1">
+      <header class="topbar">
+        <div>
+          <span class="eyebrow">FPL Pitch IQ · Fantasy Premier League</span>
+          <h1 id="page-title">Decision dashboard</h1>
+        </div>
+        <div class="top-actions">
+          <span id="sync-indicator" class="status-pill neutral">Checking data…</span>
+          <button id="refresh-button" class="primary">Refresh official data</button>
+          <details id="squad-rating" class="squad-rating">
+            <summary>
+              <span><span class="eyebrow">Team rating</span><small id="squad-rating-subtitle">Checking squad…</small></span>
+              <strong id="squad-rating-score" aria-live="polite">—</strong>
+            </summary>
+            <div class="squad-rating-popover">
+              <h2>What this rating means</h2>
+              <p id="squad-rating-method">Connect your current squad to calculate its rating.</p>
+              <dl class="squad-rating-breakdown">
+                <div><dt>Starting XI + captain</dt><dd id="squad-rating-xi">—</dd></div>
+                <div><dt>Bench depth</dt><dd id="squad-rating-bench">—</dd></div>
+                <div><dt>Current XI xPts</dt><dd id="squad-rating-xpts">—</dd></div>
+              </dl>
+              <p id="squad-rating-peers" class="squad-rating-footnote"></p>
+              <p id="squad-rating-freshness" class="squad-rating-footnote"></p>
+              <p class="squad-rating-footnote">A relative projection index—not model confidence, FPL rank, a win probability, or guaranteed points.</p>
+            </div>
+          </details>
+        </div>
+      </header>
+
+      <div id="notice" class="notice hidden" role="status"></div>
+
+      <section id="transfer-bar" class="panel transfer-bar" aria-labelledby="transfer-bar-title">
+        <div class="transfer-bar-heading">
+          <div><span class="eyebrow accent">Squad-specific decision brief</span><h2 id="transfer-bar-title">Your best move right now</h2></div>
+          <div class="transfer-context"><span id="transfer-context">Checking your squad…</span><span id="transfer-reliability" class="status-pill warning">Reliability collecting</span></div>
+        </div>
+        <div id="transfer-squad-fdr" class="transfer-squad-fdr" aria-live="polite">Checking your starting XI fixture difficulty…</div>
+        <div id="transfer-suggestions" class="transfer-strip" aria-live="polite" aria-busy="true"></div>
+        <div id="transfer-route-comparison" class="transfer-route-comparison" aria-live="polite"></div>
+        <p id="transfer-rule-note" class="transfer-evidence-note">These are alternative single transfers, not a list to make together. Extra transfers beyond your available free transfers cost −4 points each.</p>
+        <p id="transfer-evidence-note" class="transfer-evidence-note">Checking model freshness and reliability…</p>
+      </section>
+
+      <section id="view-overview" class="view active">
+        <div class="dashboard-intro">
+          <div>
+            <span class="eyebrow accent">Personalised FPL decision intelligence</span>
+            <h2 id="dashboard-team-name">Your best FPL move, explained.</h2>
+            <p>Connect your real team to compare transfers, rolling, captaincy and chip timing across the next 1–8 gameweeks—with costs, risks and model evidence shown.</p>
+            <div class="dashboard-hero-actions"><button id="hero-analyse-team" class="primary" type="button">Analyse my team</button><button id="hero-see-evidence" class="ghost" type="button">See the evidence</button></div>
+          </div>
+          <form id="dashboard-filters" class="dashboard-filters panel">
+            <label><span>Planning window</span><select id="dashboard-horizon"><option value="1">1 GW</option><option value="3">3 GWs</option><option value="5">5 GWs</option><option value="6" selected>6 GWs</option><option value="8">8 GWs</option></select></label>
+            <label><span>Risk profile</span><select id="dashboard-risk"><option value="conservative">Conservative</option><option value="balanced" selected>Balanced</option><option value="aggressive">Aggressive</option></select></label>
+            <button class="primary" type="submit">Update dashboard</button>
+          </form>
+        </div>
+
+        <article id="dashboard-decision" class="panel dashboard-decision">
+          <div>
+            <span class="eyebrow">Best action now</span>
+            <h2 id="dashboard-decision-title">Loading your decision…</h2>
+            <p id="dashboard-decision-why">Comparing the value of a transfer with keeping the current squad.</p>
+            <div class="dashboard-decision-meta"><span id="dashboard-decision-gain">—</span><span id="dashboard-decision-confidence">—</span><span id="dashboard-decision-window">—</span></div>
+          </div>
+          <div class="dashboard-deadline">
+            <span class="eyebrow">Deadline clock</span>
+            <strong id="dashboard-deadline-clock">—</strong>
+            <small id="dashboard-deadline-date">Waiting for planning event</small>
+          </div>
+        </article>
+
+        <div class="dashboard-metric-grid">
+          <article class="metric"><span>Planning gameweek</span><strong id="dashboard-gameweek">—</strong><small id="dashboard-manager-context">manager context</small></article>
+          <article class="metric"><span>Current XI xPts</span><strong id="dashboard-current-xpts">—</strong><small id="dashboard-current-window">captain included</small></article>
+          <article class="metric"><span>Bank</span><strong id="dashboard-bank">—</strong><small>available funds</small></article>
+          <article class="metric"><span>Free transfers</span><strong id="dashboard-free-transfers">—</strong><small>before transfer cost</small></article>
+          <article class="metric"><span>Squad alerts</span><strong id="dashboard-alert-count">—</strong><small>risks and opportunities</small></article>
+          <article class="metric"><span>Pitch IQ evidence</span><strong id="dashboard-reliability">—</strong><small id="dashboard-reliability-note">rolling evidence</small></article>
+        </div>
+
+        <div class="dashboard-grid dashboard-primary-grid">
+          <article class="panel dashboard-chart-panel">
+            <div class="panel-heading"><div><span class="eyebrow">Squad projection</span><h3 id="dashboard-chart-title">Expected-points shape</h3></div><span class="status-pill neutral">Current 15</span></div>
+            <p class="table-note">Selected-window expected points. Starters are highlighted; bench players remain visible for depth risk.</p>
+            <div id="dashboard-squad-chart" class="dashboard-bars" role="img" aria-label="Expected points by player"></div>
+          </article>
+          <article class="panel dashboard-rebuild-panel">
+            <div class="panel-heading"><div><span class="eyebrow">Wildcard lens</span><h3>Optimized rebuild</h3></div><span id="dashboard-rebuild-formation" class="status-pill neutral">—</span></div>
+            <div id="dashboard-rebuild" class="dashboard-rebuild"><p class="empty">Waiting for the squad optimizer.</p></div>
+            <button id="dashboard-open-optimizer" class="ghost" type="button">Open full squad optimizer</button>
+          </article>
+        </div>
+
+        <div class="dashboard-grid dashboard-diagnostic-grid">
+          <article class="panel dashboard-alert-panel">
+            <div class="panel-heading"><div><span class="eyebrow">Attention required</span><h3>Squad alerts</h3></div><span id="dashboard-alert-status" class="status-pill neutral">Checking</span></div>
+            <div id="dashboard-alerts" class="dashboard-alert-list"></div>
+          </article>
+          <article class="panel dashboard-fixture-panel">
+            <div class="panel-heading"><div><span class="eyebrow">Next three gameweeks</span><h3>Fixture outlook</h3></div><span class="status-pill neutral">Position-aware</span></div>
+            <div id="dashboard-fixtures" class="dashboard-fixture-outlook"></div>
+          </article>
+        </div>
+
+        <div class="split-grid dashboard-trust-grid">
+          <article class="panel dashboard-source-panel">
+            <div class="panel-heading"><div><span class="eyebrow">Source confidence</span><h3>Data freshness</h3></div><span id="dashboard-data-status" class="status-pill neutral">Checking</span></div>
+            <dl class="detail-list" id="sync-details">
+              <div><dt>Completed</dt><dd>—</dd></div>
+              <div><dt>Bootstrap source</dt><dd>—</dd></div>
+              <div><dt>Fixture source</dt><dd>—</dd></div>
+              <div><dt>Stale fallback</dt><dd>—</dd></div>
+            </dl>
+            <p id="dashboard-source-note" class="table-note"></p>
+          </article>
+          <article class="panel dashboard-source-panel">
+            <div class="panel-heading"><div><span class="eyebrow">Decision boundaries</span><h3>How to use this view</h3></div></div>
+            <dl class="detail-list">
+              <div><dt>Best action</dt><dd>Normal transfer decision</dd></div>
+              <div><dt>Optimized rebuild</dt><dd>Wildcard / free-hit planning</dd></div>
+              <div><dt>Expected points</dt><dd>Forecast, not guaranteed return</dd></div>
+              <div><dt>Reliability</dt><dd>Rolling pre-deadline backtests</dd></div>
+            </dl>
+          </article>
+        </div>
+      </section>
+
+      <section id="view-assistant" class="view">
+        <div class="assistant-intro">
+          <div>
+            <span class="eyebrow accent">Explainable, squad-aware answers</span>
+            <h2>Ask your decision engine</h2>
+            <p>Get plain-language answers from your live squad, projections and optimizer—not an AI opinion.</p>
+          </div>
+          <div class="assistant-trust panel">
+            <span class="assistant-trust-icon" aria-hidden="true">✓</span>
+            <div><strong>Numbers stay authoritative</strong><small>Every answer exposes its calculated evidence and source.</small></div>
+          </div>
+        </div>
+
+        <div class="assistant-layout">
+          <article class="panel assistant-chat-panel">
+            <div class="assistant-context-bar">
+              <div><span class="assistant-live-dot"></span><strong>Grounded in the current dashboard</strong><small id="assistant-context-label">Loading manager context…</small></div>
+              <span class="assistant-strategy-note">Uses the strategy selected in Plan &amp; Optimize</span>
+            </div>
+            <div class="assistant-history-bar"><span id="assistant-history-status" role="status">Chat history is saved in this browser only.</span><button id="assistant-clear-history" class="ghost compact" type="button">Clear chat</button></div>
+            <div id="assistant-messages" class="assistant-messages" aria-live="polite">
+              <article class="chat-message assistant-message welcome-message">
+                <div class="chat-avatar">AI</div>
+                <div class="chat-bubble">
+                  <span class="eyebrow">Decision explainer</span>
+                  <h3>What would you like to understand?</h3>
+                  <p>Ask about your squad, or test a transfer, captain, or player comparison using the scenario tool.</p>
+                </div>
+              </article>
+            </div>
+            <div id="assistant-starters" class="assistant-starters" aria-label="Suggested questions"></div>
+            <form id="assistant-form" class="assistant-form">
+              <label class="sr-only" for="assistant-question">Ask about your FPL decisions</label>
+              <input id="assistant-question" type="text" maxlength="500" autocomplete="off" placeholder="Ask: Why not Palmer?" required>
+              <button class="primary" type="submit">Ask</button>
+            </form>
+            <p class="assistant-disclaimer">Uses only installed official FPL data and calculated engine outputs. Unsupported questions are declined.</p>
+          </article>
+
+          <aside class="assistant-side">
+            <article class="panel assistant-scenario-panel" aria-labelledby="assistant-scenario-title">
+              <span class="eyebrow accent">Scenario tools</span>
+              <h3 id="assistant-scenario-title">Test a decision</h3>
+              <p>Explore a move before changing your squad. Results use your selected planning window and risk profile.</p>
+              <form id="assistant-scenario-form" class="assistant-scenario-form">
+                <label><span>Scenario</span><select id="assistant-scenario-type">
+                  <option value="transfer_routes">Roll vs one or two moves</option>
+                  <option value="transfer_swap">Test a transfer</option>
+                  <option value="compare_players">Compare two players</option>
+                  <option value="captain_swap">Try another captain</option>
+                </select></label>
+                <label class="assistant-scenario-field hidden" data-scenario-field="sell"><span>Sell from your squad</span><input id="assistant-scenario-sell" type="search" list="assistant-squad-options" autocomplete="off" placeholder="Search your 15 players"></label>
+                <label class="assistant-scenario-field hidden" data-scenario-field="buy"><span>Buy</span><input id="assistant-scenario-buy" type="search" list="assistant-buy-options" autocomplete="off" placeholder="Search same-position players"></label>
+                <label class="assistant-scenario-field hidden" data-scenario-field="left"><span>First player</span><input id="assistant-scenario-left" type="search" list="assistant-player-options" autocomplete="off" placeholder="Search player"></label>
+                <label class="assistant-scenario-field hidden" data-scenario-field="right"><span>Second player</span><input id="assistant-scenario-right" type="search" list="assistant-player-options" autocomplete="off" placeholder="Search player"></label>
+                <label class="assistant-scenario-field hidden" data-scenario-field="captain"><span>Current starter</span><input id="assistant-scenario-captain" type="search" list="assistant-starter-options" autocomplete="off" placeholder="Search your starting XI"></label>
+                <datalist id="assistant-player-options"></datalist>
+                <datalist id="assistant-squad-options"></datalist>
+                <datalist id="assistant-buy-options"></datalist>
+                <datalist id="assistant-starter-options"></datalist>
+                <button class="primary" type="submit">Compare routes</button>
+              </form>
+              <p id="assistant-scenario-status" class="assistant-scenario-status" role="status">Loading current player data…</p>
+            </article>
+            <article class="panel assistant-boundaries">
+              <span class="eyebrow">What it can explain</span>
+              <h3>Inside the model</h3>
+              <ul>
+                <li><span>01</span>Best transfer and Do Nothing</li>
+                <li><span>02</span>Why not a named player?</li>
+                <li><span>03</span>Captain and optimized squad</li>
+                <li><span>04</span>Risks, fixtures and budget</li>
+                <li><span>05</span>Calibration and confidence</li>
+              </ul>
+            </article>
+            <article class="panel assistant-boundaries safe">
+              <span class="eyebrow">Hard boundary</span>
+              <h3>No invented statistics</h3>
+              <p>The numerical engine decides. This layer explains those results and clearly stops when the required evidence is unavailable.</p>
+            </article>
+          </aside>
+        </div>
+      </section>
+
+      <section id="view-chips" class="view">
+        <div class="chip-intro">
+          <div>
+            <span class="eyebrow accent">Team-specific chip intelligence</span>
+            <h2>AI Chip Planner</h2>
+            <p>Decide in five seconds, then inspect the expected-points evidence behind Bench Boost, Triple Captain, Wildcard and Free Hit.</p>
+          </div>
+          <button id="refresh-chip-plan" class="primary" type="button">Recalculate strategy</button>
+        </div>
+
+        <article class="panel chip-hero">
+          <div class="chip-hero-copy">
+            <span class="eyebrow">AI recommendation this week</span>
+            <h3 id="chip-summary-title">Building your chip strategy…</h3>
+            <p id="chip-summary-copy">Comparing this Gameweek with every visible future opportunity.</p>
+            <div class="chip-summary-meta">
+              <span id="chip-summary-opportunity">Best opportunity · —</span>
+              <span id="chip-summary-gain">Expected gain · —</span>
+              <span id="chip-summary-confidence">Confidence · —</span>
+            </div>
+          </div>
+          <button id="view-chip-strategy" class="ghost" type="button">View chip strategy</button>
+        </article>
+
+        <div id="chip-cards" class="chip-card-grid" aria-live="polite">
+          <article class="panel chip-card skeleton-card"><span class="eyebrow">Loading</span><h3>Evaluating chips…</h3></article>
+        </div>
+
+        <div class="chip-detail-grid">
+          <article class="panel chip-detail-panel">
+            <div class="panel-heading"><div><span class="eyebrow accent">Triple Captain planner</span><h3 id="tc-title">Captain opportunity curve</h3></div><span id="tc-status" class="status-pill neutral">Calculating</span></div>
+            <div id="tc-opportunities" class="chip-opportunity-bars"></div>
+            <div id="tc-candidates" class="chip-candidate-list"></div>
+          </article>
+
+          <article class="panel chip-detail-panel">
+            <div class="panel-heading"><div><span class="eyebrow accent">Bench Boost planner</span><h3 id="bb-title">Bench readiness</h3></div><span id="bb-score" class="chip-score">—</span></div>
+            <div id="bb-players" class="chip-player-list"></div>
+            <div id="bb-preparation" class="chip-preparation"><p class="empty">Calculating the best preparation move.</p></div>
+          </article>
+        </div>
+
+        <div class="chip-detail-grid chip-rebuild-grid">
+          <article class="panel chip-detail-panel">
+            <div class="panel-heading"><div><span class="eyebrow accent">Wildcard planner</span><h3>Current squad vs AI rebuild</h3></div><button id="build-wildcard" class="ghost compact" type="button">Generate my Wildcard team</button></div>
+            <div id="wildcard-comparison" class="chip-comparison"></div>
+            <div id="wildcard-opportunities" class="chip-opportunity-bars compact-bars"></div>
+          </article>
+
+          <article class="panel chip-detail-panel">
+            <div class="panel-heading"><div><span class="eyebrow accent">Free Hit planner</span><h3>Best one-week reset</h3></div><button id="build-free-hit" class="ghost compact" type="button">Build my Free Hit team</button></div>
+            <div id="freehit-comparison" class="chip-comparison"></div>
+            <div id="freehit-opportunities" class="chip-opportunity-bars compact-bars"></div>
+          </article>
+        </div>
+
+        <article id="chip-season-strategy" class="panel chip-season-panel">
+          <div class="panel-heading"><div><span class="eyebrow accent">AI season strategy</span><h3>Compare chip sequences</h3></div><span id="strategy-window" class="status-pill neutral">8-GW window</span></div>
+          <div id="chip-strategies" class="chip-strategies"></div>
+          <form id="chip-scenario-form" class="chip-scenario-form">
+            <div><span class="eyebrow">What-if simulator</span><p>Force a chip into a Gameweek and compare it with the model's preferred timing.</p></div>
+            <label><span>Chip</span><select id="chip-scenario-chip"><option value="wildcard">Wildcard</option><option value="bench_boost">Bench Boost</option><option value="triple_captain">Triple Captain</option><option value="free_hit">Free Hit</option></select></label>
+            <label><span>Gameweek</span><select id="chip-scenario-event"></select></label>
+            <button class="primary" type="submit">Simulate</button>
+          </form>
+          <div id="chip-scenario-result" class="chip-scenario-result hidden"></div>
+        </article>
+
+        <article class="panel chip-boundaries">
+          <div><span class="eyebrow">Decision boundaries</span><h3>What could change the plan?</h3></div>
+          <div id="chip-boundary-list" class="chip-boundary-list"></div>
+        </article>
+      </section>
+
+      <section id="view-backtesting" class="view">
+        <div class="backtest-intro">
+          <div>
+            <span class="eyebrow accent">Walk-forward model validation</span>
+            <h2>Does the model add value?</h2>
+            <p>Every score uses the last forecast saved before the official deadline. Results appear only after the relevant gameweek finishes.</p>
+          </div>
+          <button id="run-backtest" class="primary" type="button">Run backtest now</button>
+        </div>
+
+        <article class="panel backtest-verdict" aria-live="polite" aria-atomic="true">
+          <div>
+            <span class="eyebrow">Evidence verdict</span>
+            <h3 id="backtest-verdict-title">Collecting historical evidence</h3>
+            <p id="backtest-verdict-copy">Waiting for a stored pre-deadline forecast to complete.</p>
+          </div>
+          <span id="backtest-status" class="status-pill warning">Collecting</span>
+        </article>
+
+        <div class="backtest-metrics">
+          <article class="metric"><span>Evaluated GWs</span><strong id="backtest-events">0</strong><small>deadline-safe samples</small></article>
+          <article class="metric"><span>Player samples</span><strong id="backtest-samples">0</strong><small>player-gameweeks</small></article>
+          <article class="metric"><span>Point MAE</span><strong id="backtest-mae">—</strong><small>lower is better</small></article>
+          <article class="metric"><span>Rank correlation</span><strong id="backtest-rank">—</strong><small>higher is better</small></article>
+          <article class="metric"><span>Internal model score</span><strong id="backtest-reliability">—</strong><small>not a success probability</small></article>
+          <article class="metric"><span>Vs best baseline</span><strong id="backtest-lift">—</strong><small>XI points per GW</small></article>
+        </div>
+
+        <article class="panel backtest-benchmark-panel">
+          <div class="panel-heading"><div><span class="eyebrow">Predictive value</span><h3>Model versus simple selection rules</h3></div><span class="status-pill neutral">Top 11 actual points</span></div>
+          <p class="table-note">Each method ranks the same pre-deadline player pool. We then total the actual points earned by its top 11 after the gameweek.</p>
+          <div id="backtest-benchmarks" class="backtest-benchmarks" role="img" aria-label="Model and baseline score comparison. Loading results."></div>
+        </article>
+
+        <div class="backtest-grid">
+          <article class="panel backtest-chart-panel">
+            <div class="panel-heading"><div><span class="eyebrow">Error over time</span><h3>Gameweek accuracy</h3></div><span class="status-pill neutral">MAE · bias · rank</span></div>
+            <div id="backtest-events-chart" class="backtest-events-chart" role="img" aria-label="Gameweek forecast accuracy. Loading results."></div>
+          </article>
+          <article class="panel backtest-chart-panel">
+            <div class="panel-heading"><div><span class="eyebrow">Probability calibration</span><h3>Predicted starts vs actual starts</h3></div><span class="status-pill neutral">20% bins</span></div>
+            <div id="backtest-calibration-chart" class="backtest-calibration-chart" role="img" aria-label="Predicted and actual starting probability calibration. Loading results."></div>
+          </article>
+        </div>
+
+        <article class="panel backtest-decisions-panel">
+          <div class="panel-heading"><div><span class="eyebrow">Recommendation outcomes</span><h3>Transfers, hits and captaincy</h3></div><span class="status-pill neutral">Manager-specific snapshots</span></div>
+          <div id="backtest-decisions" class="backtest-decisions"></div>
+        </article>
+
+        <article class="panel backtest-method-panel">
+          <div><span class="eyebrow">No-look-ahead guardrail</span><h3>The deadline is the boundary</h3></div>
+          <dl class="detail-list">
+            <div><dt>Forecast selected</dt><dd>Latest snapshot at or before deadline</dd></div>
+            <div><dt>Baseline inputs</dt><dd>Captured inside that same snapshot</dd></div>
+            <div><dt>Calibration starts</dt><dd>3 GWs + 100 player-gameweeks</dd></div>
+            <div><dt>Long-term transfer result</dt><dd>Only after all 6 gameweeks finish</dd></div>
+          </dl>
+          <p id="backtest-limitations" class="table-note"></p>
+        </article>
+      </section>
+
+      <section id="view-ledger" class="view" aria-labelledby="ledger-title">
+        <div class="ledger-intro">
+          <div>
+            <span class="eyebrow accent">Your decision history</span>
+            <h2 id="ledger-title">Did Pitch IQ help your team?</h2>
+            <p>See the final advice saved before each deadline, whether official picks matched it, and what a clean points comparison says afterward.</p>
+          </div>
+          <button id="refresh-ledger" class="primary" type="button">Check latest results</button>
+        </div>
+        <div class="ledger-metrics" aria-label="Verified decision outcomes">
+          <article class="metric"><span>Verified net points</span><strong id="ledger-net">—</strong><small>versus holding the outgoing player</small></article>
+          <article class="metric"><span>Scored transfers</span><strong id="ledger-verified">—</strong><small>matched and directly comparable</small></article>
+          <article class="metric"><span>Awaiting or unscored</span><strong id="ledger-unverified">—</strong><small>never counted as points earned</small></article>
+        </div>
+        <article class="panel ledger-panel">
+          <div class="panel-heading ledger-heading">
+            <div><span class="eyebrow">Deadline-by-deadline record</span><h3>Recommendations and outcomes</h3></div>
+            <label class="ledger-filter"><span>Show</span><select id="ledger-status-filter"><option value="all">All decisions</option><option value="verified">Verified</option><option value="not_followed">Not matched</option><option value="unverified">Unverified</option><option value="pending">Pending</option></select></label>
+          </div>
+          <div id="ledger-records" class="ledger-records" role="status" aria-live="polite"><p class="backtest-empty">Loading decision history…</p></div>
+        </article>
+        <article class="panel ledger-method">
+          <div><span class="eyebrow">How points are counted</span><h3>Evidence before claims</h3></div>
+          <p id="ledger-methodology">Only a followed, comparable transfer is counted. Older recommendations, changed lineups, chips and other ambiguous cases remain visible but unscored.</p>
+          <button id="ledger-model-performance" class="ledger-link" type="button">View model performance →</button>
+        </article>
+      </section>
+
+      <section id="view-team" class="view">
+        <div class="section-intro">
+          <div><span class="eyebrow accent">Manager context</span><h2>Connect your FPL team</h2></div>
+          <p>Your Team ID and preferences stay on this computer. Public picks normally appear only after a gameweek deadline.</p>
+        </div>
+        <form id="team-form" class="panel form-panel">
+          <label><span>FPL Team ID</span><input id="team-id" name="team_id" type="number" min="1" required placeholder="e.g. 123456"></label>
+          <label><span>Planning gameweek</span><input id="current-gameweek" name="current_gameweek" type="number" min="1" max="38" placeholder="Automatic"></label>
+          <label><span>Bank (£m)</span><input id="bank" name="bank" type="number" min="0" max="500" step="0.1" placeholder="e.g. 1.5"></label>
+          <label><span>Free transfers</span><input id="free-transfers" name="free_transfers" type="number" min="0" max="5" value="1"></label>
+          <label><span>Planning horizon</span><select id="horizon" name="horizon"><option value="1">1 GW</option><option value="3">3 GWs</option><option value="5">5 GWs</option><option value="6" selected>6 GWs</option><option value="8">8 GWs</option></select></label>
+          <label><span>Risk preference</span><select id="risk" name="risk_preference"><option value="conservative">Conservative</option><option value="balanced" selected>Balanced</option><option value="aggressive">Aggressive</option></select></label>
+          <div class="form-action"><button class="primary" type="submit">Save and import squad</button><small>Uses public official FPL endpoints. No password needed.</small></div>
+        </form>
+        <article id="manager-verification" class="panel manager-verification" aria-labelledby="manager-verification-title">
+          <div class="panel-heading"><div><span class="eyebrow accent">Optional precision</span><h3 id="manager-verification-title">Sync exact FPL selling prices</h3></div><span id="manager-verification-status" class="status-pill neutral" role="status">Optional price sync</span></div>
+          <p>Recommendations work from your imported squad without this step. Where selling prices are unavailable, affordability is an estimate and must be checked in FPL before making a transfer. For exact prices and current private transfers, import one snapshot from your signed-in FPL account. No password or cookie is entered here.</p>
+          <div class="manager-snapshot-steps"><a id="my-team-source-link" href="https://fantasy.premierleague.com/" target="_blank" rel="noopener noreferrer">Open my official FPL team data ↗</a><span>Sign in to FPL if needed, copy the full JSON shown on that page, then paste it below.</span></div>
+          <form id="my-team-snapshot-form" class="manager-snapshot-form">
+            <label><span>Paste official My Team data</span><textarea id="my-team-snapshot" rows="4" required placeholder='{"picks":[...],"transfers":{...}}' aria-describedby="my-team-snapshot-note"></textarea></label>
+            <small id="my-team-snapshot-note">Processed on this computer. Copilot stores only the squad, prices and budget—not the pasted response or your FPL login.</small>
+            <button class="primary" type="submit">Import live team in one step</button>
+          </form>
+          <details class="manager-manual-fallback"><summary>Cannot access the FPL data page? Enter details manually</summary>
+          <form id="manager-verification-form">
+            <div class="manager-verification-fields">
+              <label><span>Current bank (£m)</span><input id="verified-bank" type="number" min="0" max="500" step="0.1" required></label>
+              <label><span>Free transfers available now</span><input id="verified-free-transfers" type="number" min="0" max="5" step="1" required></label>
+            </div>
+            <div><strong>Exact selling prices (£m)</strong><small>Use each player’s selling price in your official transfer screen—not their current market price.</small></div>
+            <div id="manager-verification-prices" class="manager-verification-prices"></div>
+            <label class="manager-verification-check"><input id="verified-squad-current" type="checkbox" required><span>I checked all 15 players against my current FPL squad, including transfers not yet public.</span></label>
+            <button class="primary" type="submit">Confirm decision inputs</button>
+          </form>
+          </details>
+        </article>
+        <article class="panel pending-transfer-panel">
+          <div class="pending-transfer-copy">
+            <span class="eyebrow accent">Before-deadline squad update</span>
+            <h3>Record a transfer FPL has not published yet</h3>
+            <p id="pending-transfer-status">Import your squad first. If current picks are private, record the completed transfer here so the pitch and optimizers use the right 15 players.</p>
+          </div>
+          <form id="manual-transfer-form" class="pending-transfer-form">
+            <label><span>Player transferred out</span><select id="manual-transfer-out" required><option value="">Choose player</option></select></label>
+            <span class="pending-transfer-arrow" aria-hidden="true">→</span>
+            <label><span>Player transferred in</span><select id="manual-transfer-in" required disabled><option value="">Choose outgoing player first</option></select></label>
+            <button class="primary" type="submit">Update local squad</button>
+          </form>
+          <small class="pending-transfer-note">This changes only your local planning copy. Re-import after the deadline to replace it with the official published squad.</small>
+        </article>
+        <article id="team-stats" class="panel team-stats">
+          <div class="panel-heading"><div><span class="eyebrow">Team snapshot</span><h3>Pitch context</h3></div><span id="pitch-formation" class="status-pill neutral">Import squad</span></div>
+          <div class="team-metric-grid">
+            <article class="team-metric"><span>EXPECTED GW POINTS</span><strong id="team-expected-gw">—</strong></article>
+            <article class="team-metric"><span>6-GW PROJECTION</span><strong id="team-expected-6">—</strong></article>
+            <article class="team-metric"><span>TEAM VALUE</span><strong id="team-value">—</strong></article>
+            <article class="team-metric"><span>BANK</span><strong id="team-bank">—</strong></article>
+            <article class="team-metric"><span>FREE TRANSFERS</span><strong id="team-free-transfers">—</strong></article>
+          </div>
+        </article>
+        <article id="team-pitch" class="panel pitch-panel">
+          <div class="panel-heading"><div><span class="eyebrow accent">Live tactical shape</span><h3>FPL pitch</h3></div><span id="pitch-hint" class="status-pill neutral">Import your team to view the layout</span></div>
+          <div class="pitch-controls">
+            <div class="pitch-view-toggle" role="group" aria-label="Squad display">
+              <button id="pitch-view-button" class="active" type="button" aria-pressed="true">Pitch view</button>
+              <button id="list-view-button" type="button" aria-pressed="false">List view</button>
+            </div>
+            <label class="pitch-formation-control"><span>Formation</span><select id="formation-select" aria-label="Formation selector"></select></label>
+          </div>
+          <div id="pitch-board" class="pitch-board" aria-live="polite"></div>
+        </article>
+        <article id="team-player-detail" class="panel team-player-detail hidden">
+          <div class="panel-heading"><div><span class="eyebrow">Player intelligence</span><h3 id="team-player-name">Player profile</h3></div><button id="close-team-player-detail" class="ghost" type="button">Close</button></div>
+          <p id="team-player-summary">Select a player on the pitch to inspect expected output, minutes, fixture context and role expectations.</p>
+          <div id="team-player-metrics" class="metric-grid"></div>
+          <dl id="team-player-stats" class="detail-list model-inputs"></dl>
+          <h4>Why this player is currently in your team</h4>
+          <p id="team-player-why" class="table-note"></p>
+        </article>
+        <article id="team-transfers" class="panel">
+          <div class="panel-heading"><div><span class="eyebrow accent">Team-specific opportunities</span><h3>Best Transfer Opportunities</h3></div><span id="team-transfer-context" class="status-pill neutral">Waiting for optimizer</span></div>
+          <div id="team-transfer-strip" class="transfer-strip" aria-live="polite"></div>
+          <div id="team-weakness" class="team-weakness"></div>
+        </article>
+        <article id="team-summary" class="panel hidden">
+          <div class="panel-heading"><div><span class="eyebrow">Imported squad</span><h3 id="team-name">My team</h3></div><span id="imported-gw" class="status-pill neutral">—</span></div>
+          <p id="team-warning" class="inline-warning hidden"></p>
+          <div class="table-wrap"><table><thead><tr><th>Player</th><th>Pos</th><th>Club</th><th>Price</th><th>Status</th><th>Points</th><th>Role</th></tr></thead><tbody id="squad-body"></tbody></table></div>
+        </article>
+      </section>
+
+      <section id="view-optimizer" class="view">
+        <div class="section-intro">
+          <div><span class="eyebrow accent">Continuity-first weekly planning</span><h2>Improve your team without unnecessary churn</h2></div>
+          <p>For an imported team, this protects your existing squad, respects available free transfers and changes a player only when the projected improvement clears a churn penalty. Full rebuilds belong exclusively to Wildcard and Free Hit planning.</p>
+        </div>
+        <article class="panel strategy-settings" aria-labelledby="strategy-settings-title">
+          <div>
+            <span class="eyebrow accent">Strategy settings</span>
+            <h3 id="strategy-settings-title">How should FPL Pitch IQ plan?</h3>
+            <p>These settings drive the optimizer and give Ask Copilot its strategic context.</p>
+          </div>
+          <div class="strategy-controls">
+            <label><span>Planning window</span><select id="strategy-horizon"><option value="1">1 GW</option><option value="3">3 GWs</option><option value="5">5 GWs</option><option value="6" selected>6 GWs</option><option value="8">8 GWs</option></select></label>
+            <label><span>Risk approach</span><select id="strategy-risk"><option value="conservative">Conservative</option><option value="balanced" selected>Balanced</option><option value="aggressive">Aggressive</option></select></label>
+          </div>
+        </article>
+        <article class="panel optimizer-hero">
+          <div>
+            <span class="eyebrow">Decision engine</span>
+            <h3>Optimize within your transfer allowance</h3>
+            <p id="optimizer-summary">Run the optimizer to improve the current squad without treating a theoretical rebuild as weekly advice.</p>
+          </div>
+          <button id="run-squad-optimizer" class="primary" type="button">Run squad optimizer</button>
+        </article>
+        <div id="optimizer-metrics" class="metric-grid optimizer-metrics">
+          <article class="metric"><span>Squad cost</span><strong>—</strong><small>within available budget</small></article>
+          <article class="metric"><span>Captain-adjusted xPts</span><strong>—</strong><small>selected horizon</small></article>
+          <article class="metric"><span>Best formation</span><strong>—</strong><small>legal starting XI</small></article>
+          <article class="metric"><span>Confidence</span><strong>—</strong><small>weighted projection certainty</small></article>
+        </div>
+        <article class="panel optimizer-pitch-panel">
+          <div class="panel-heading"><div><span class="eyebrow accent">Continuity plan</span><h3>Protected squad and best XI</h3></div><span id="optimizer-context" class="status-pill neutral">Not run</span></div>
+          <div id="optimizer-pitch" class="pitch-board optimizer-pitch" aria-live="polite"><p class="pitch-empty">Run the optimizer to generate the best legal 15-player squad.</p></div>
+        </article>
+        <div class="split-grid optimizer-details">
+          <article class="panel">
+            <div class="panel-heading"><div><span class="eyebrow">Compared with your team</span><h3>Controlled changes</h3></div></div>
+            <div id="optimizer-comparison" class="optimizer-comparison"><p class="empty">Importing your team enables player-by-player comparison.</p></div>
+          </article>
+          <article class="panel">
+            <div class="panel-heading"><div><span class="eyebrow">Rules enforced</span><h3>Optimization guardrails</h3></div></div>
+            <dl id="optimizer-constraints" class="detail-list">
+              <div><dt>Squad</dt><dd>2 GKP · 5 DEF · 5 MID · 3 FWD</dd></div>
+              <div><dt>Club limit</dt><dd>Maximum 3</dd></div>
+              <div><dt>Starting XI</dt><dd>Valid FPL formation</dd></div>
+              <div><dt>Availability</dt><dd>High-risk players excluded</dd></div>
+            </dl>
+          </article>
+        </div>
+      </section>
+
+      <section id="view-players" class="view">
+        <div class="section-intro"><div><span class="eyebrow accent">Official observations</span><h2>Player database</h2></div><p>Expected goals and assists here are historical official aggregates—not future projections.</p></div>
+        <div class="panel filters">
+          <label><span>Search</span><input id="player-search" type="search" placeholder="Player name"></label>
+          <label><span>Club</span><select id="player-team"><option value="">All clubs</option></select></label>
+          <label><span>Position</span><select id="player-position"><option value="">All positions</option><option value="1">GKP</option><option value="2">DEF</option><option value="3">MID</option><option value="4">FWD</option></select></label>
+          <label><span>Sort</span><select id="player-sort"><option value="total_points">Total points</option><option value="price">Price</option><option value="ownership">Ownership</option><option value="minutes">Minutes</option><option value="xg">Official xG</option><option value="xa">Official xA</option><option value="form">Form</option></select></label>
+        </div>
+        <article class="panel table-panel"><div class="table-wrap"><table><thead><tr><th>Player</th><th>Pos</th><th>Club</th><th>Price</th><th>Own.</th><th>Pts</th><th>Min</th><th>xG</th><th>xA</th><th>Status</th></tr></thead><tbody id="players-body"></tbody></table></div></article>
+      </section>
+
+      <section id="view-fixtures" class="view">
+        <div class="section-intro"><div><span class="eyebrow accent">Schedule intelligence</span><h2>Fixture database</h2></div><p>Position-specific fixture scores now feed every projection. Raw official FDR remains visible here only as source context.</p></div>
+        <div class="panel filters compact"><label><span>From GW</span><input id="fixture-start" type="number" min="1" max="38" placeholder="Next"></label><label><span>Horizon</span><select id="fixture-horizon"><option value="3">3 GWs</option><option value="5">5 GWs</option><option value="6">6 GWs</option><option value="8" selected>8 GWs</option></select></label></div>
+        <div id="fixture-grid" class="fixture-grid"></div>
+      </section>
+
+      <section id="view-quality" class="view">
+        <div class="section-intro"><div><span class="eyebrow accent">No silent failures</span><h2>Data quality</h2></div><p>Errors block installation. Warnings and unavailable provider fields remain visible.</p></div>
+        <div class="metric-grid quality-metrics"><article class="metric"><span>Errors</span><strong id="quality-errors">—</strong><small>blocking</small></article><article class="metric"><span>Warnings</span><strong id="quality-warnings">—</strong><small>review</small></article><article class="metric"><span>Provider gaps</span><strong id="quality-info">—</strong><small>declared</small></article></div>
+        <article class="panel"><div id="quality-list" class="quality-list"></div></article>
+      </section>
+
+      <section id="view-projections" class="view">
+        <div class="section-intro">
+          <div><span class="eyebrow accent">Transparent projection model</span><h2>Expected-points projections</h2></div>
+          <p>Forecasts are transparent numerical estimates, not facts. The engine scores stored pre-deadline forecasts after each gameweek and calibrates only when enough evidence exists.</p>
+        </div>
+        <div class="model-banner panel">
+          <div><span class="eyebrow">Model status</span><strong id="projection-model">Not generated</strong><small id="projection-generated">Refresh official data to generate projections.</small></div>
+          <span class="status-pill warning" id="projection-calibration">Uncalibrated</span>
+        </div>
+        <article class="panel reliability-panel" aria-labelledby="reliability-title">
+          <div class="panel-heading"><div><span class="eyebrow">FPL Pitch IQ · rolling validation</span><h3 id="reliability-title">Model evidence</h3></div><span id="reliability-status" class="status-pill warning">Collecting</span></div>
+          <p id="reliability-message" class="table-note">Waiting for the first stored pre-deadline projection to finish.</p>
+          <div id="reliability-metrics" class="reliability-grid"></div>
+        </article>
+        <div class="panel filters projection-filters">
+          <label><span>Search</span><input id="projection-search" type="search" placeholder="Player name"></label>
+          <label><span>Club</span><select id="projection-team"><option value="">All clubs</option></select></label>
+          <label><span>Position</span><select id="projection-position"><option value="">All positions</option><option value="1">GKP</option><option value="2">DEF</option><option value="3">MID</option><option value="4">FWD</option></select></label>
+          <label><span>Horizon</span><select id="projection-horizon"><option value="1">1 GW</option><option value="3">3 GWs</option><option value="5">5 GWs</option><option value="6" selected>6 GWs</option><option value="8">8 GWs</option></select></label>
+          <label><span>Sort</span><select id="projection-sort"><option value="xpts">Expected points</option><option value="value">Value</option><option value="minutes">Expected minutes</option><option value="start">Start probability</option><option value="ceiling">6-GW ceiling</option><option value="confidence">Confidence</option><option value="price">Price</option></select></label>
+        </div>
+        <article id="projection-detail" class="panel projection-detail hidden" tabindex="-1">
+          <div class="panel-heading"><div><span class="eyebrow">Projection decomposition</span><h3 id="projection-detail-name">Player</h3></div><button id="close-projection-detail" class="ghost" type="button">Close</button></div>
+          <div id="projection-summary-grid" class="metric-grid"></div>
+          <h4>Model inputs and uncertainty</h4>
+          <dl id="projection-model-inputs" class="detail-list model-inputs"></dl>
+          <h4 id="projection-components-heading">Selected-horizon components</h4>
+          <div id="projection-components" class="component-grid"></div>
+          <h4>Gameweek path</h4>
+          <div class="table-wrap"><table><caption class="sr-only">Per-gameweek projection path</caption><thead><tr><th>GW</th><th>Fixture</th><th>xPts</th><th>xG · goal chance</th><th>xA · assist chance</th><th>Team xG</th><th>CS chance</th><th>Fixture score</th></tr></thead><tbody id="projection-gameweeks"></tbody></table></div>
+        </article>
+        <article class="panel table-panel">
+          <div class="table-note">Floor, median, and ceiling are approximate 6-GW distribution summaries. Select a player to inspect every model component.</div>
+          <div id="projection-result-count" class="table-note" aria-live="polite"></div>
+          <div class="table-wrap"><table><caption class="sr-only">Ranked player projections</caption><thead><tr><th>Player</th><th>Pos</th><th>Club</th><th>Price</th><th id="projection-xpts-heading">xPts · 6 GW</th><th id="projection-value-heading">Value · 6 GW</th><th>xMin</th><th>Start</th><th>6GW floor</th><th>6GW median</th><th>6GW ceiling</th><th>Model signal</th><th><span class="sr-only">Action</span></th></tr></thead><tbody id="projections-body"></tbody></table></div>
+        </article>
+      </section>
+
+      <section id="view-pricing" class="view">
+        <div class="pricing-intro">
+          <span class="eyebrow accent">Simple, manager-first pricing</span>
+          <h2>Try the decision workflow before you pay.</h2>
+          <p>Core gameweek answers stay free. Pro unlocks the planning depth, saved scenarios and alerts that serious managers use across the season.</p>
+        </div>
+        <div class="pricing-grid">
+          <article class="panel pricing-card">
+            <span class="pricing-kicker">Free</span>
+            <h3>£0 <small>/ forever</small></h3>
+            <p>Enough to understand your team and get one trustworthy decision each gameweek.</p>
+            <ul>
+              <li>Official FPL squad import</li>
+              <li>1- and 3-GW player projections</li>
+              <li>Best move versus Do Nothing</li>
+              <li>Captaincy shortlist</li>
+              <li>Model performance summary</li>
+            </ul>
+            <button class="ghost pricing-team-cta" type="button">Analyse my team</button>
+          </article>
+          <article class="panel pricing-card featured">
+            <span class="pricing-badge">Best for active managers</span>
+            <span class="pricing-kicker">Copilot Pro</span>
+            <h3>£9 <small>/ month</small></h3>
+            <p>Full planning intelligence for transfers, chips and changing team news.</p>
+            <ul>
+              <li>Up to 8-GW transfer optimization</li>
+              <li>Saved plans and what-if scenarios</li>
+              <li>Wildcard and Free Hit builders</li>
+              <li>Deadline, injury and price alerts</li>
+              <li>Full explainability and risk controls</li>
+            </ul>
+            <button class="primary pricing-team-cta" type="button">Start 7-day free trial</button>
+            <small class="pricing-fineprint">No charge today in this preview. Cancel anytime.</small>
+          </article>
+          <article class="panel pricing-card annual">
+            <span class="pricing-kicker">Annual Pro</span>
+            <h3>£69 <small>/ season</small></h3>
+            <p>The same Pro intelligence for the full FPL season—save £39 versus monthly.</p>
+            <ul>
+              <li>Everything in Copilot Pro</li>
+              <li>Season-long strategy memory</li>
+              <li>Weekly team-review digest</li>
+              <li>Priority feature access</li>
+              <li>14-day refund window</li>
+            </ul>
+            <button class="ghost pricing-team-cta" type="button">Choose annual</button>
+          </article>
+        </div>
+        <article class="panel pricing-proof">
+          <div><span class="eyebrow">What you are paying for</span><h3>Better decisions—not an AI chat wrapper.</h3></div>
+          <dl class="detail-list">
+            <div><dt>Personalised inputs</dt><dd>Your squad, bank, transfers and selling prices</dd></div>
+            <div><dt>Decision engine</dt><dd>Legal moves, hit cost, opportunity cost and future fixtures</dd></div>
+            <div><dt>Trust layer</dt><dd>Freshness, uncertainty and rolling out-of-sample evaluation</dd></div>
+          </dl>
+        </article>
+      </section>
+    </main>
+  </div>
+  <script src="/app.js?v=pitch-iq-2" defer></script>
+</body>
+</html>

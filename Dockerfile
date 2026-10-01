@@ -1,5 +1,14 @@
 FROM python:3.12-slim
+
 WORKDIR /app
-COPY pitchiq_server.py /app/pitchiq_server.py
+
+COPY fpl_engine /app/fpl_engine
+COPY README.md /app/README.md
+
 ENV PYTHONUNBUFFERED=1
-CMD ["python","/app/pitchiq_server.py"]
+ENV FPL_HOST=0.0.0.0
+ENV FPL_DATA_DIR=/app/data
+
+RUN mkdir -p /app/data/cache
+
+CMD ["sh", "-c", "python -m fpl_engine serve --host 0.0.0.0 --port ${PORT:-8765} --no-initial-update"]

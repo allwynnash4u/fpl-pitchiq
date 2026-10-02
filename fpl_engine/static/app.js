@@ -2043,6 +2043,46 @@ function renderSquadFdr(result) {
   root.append(title, counts, note);
 }
 
+function finalDecisionCard(decision, result) {
+  const card = document.createElement("article");
+  const hold = decision.action === "hold";
+  const verification = decision.action === "verification_required";
+  card.className = `transfer-card final-decision${hold ? " hold" : ""}${decision.action === "transfer" ? " recommended" : ""}`;
+
+  const top = document.createElement("div"); top.className = "transfer-card-top";
+  const label = document.createElement("span"); label.className = "transfer-rank"; label.textContent = "Final decision";
+  const flag = document.createElement("span"); flag.className = "transfer-flag";
+  flag.textContent = verification ? "Verify inputs" : hold ? "Roll" : decision.action === "transfer" ? "Action" : "Connect team";
+  top.append(label, flag); card.appendChild(top);
+
+  const move = document.createElement("strong"); move.className = "transfer-move";
+  move.textContent = decision.title || "Decision pending";
+  const gain = document.createElement("span"); gain.className = "transfer-gain";
+  if (verification) gain.textContent = "No action is ready";
+  else if (hold) gain.textContent = "Keep the squad · preserve the free transfer";
+  else if (decision.net_gain) gain.textContent = `${signed(decision.net_gain, " pts")} over ${result.horizon} GW${result.horizon === 1 ? "" : "s"}`;
+  else gain.textContent = "Selected by the continuity-first squad optimizer";
+  const windows = document.createElement("span"); windows.className = "transfer-windows";
+  windows.textContent = decision.confidence
+    ? `Model signal ${Math.round(Number(decision.confidence) * 100)}/100 · heuristic · ${decision.changes ?? 0} change${Number(decision.changes || 0) === 1 ? "" : "s"}`
+    : "Decision source · squad optimizer";
+  const why = document.createElement("p"); why.className = "transfer-why"; why.textContent = decision.summary || "No final decision is available.";
+  card.append(move, gain, windows, why);
+
+  if (decision.action === "transfer" && decision.transfer) {
+    const transfer = decision.transfer;
+    const evidence = document.createElement("div"); evidence.className = "transfer-evidence";
+    evidence.append(
+      document.createElement("span"),
+      document.createElement("span"),
+    );
+    evidence.children[0].textContent = `1 GW ${signed(transfer.gain_1)} · 3 GW ${signed(transfer.gain_3)} · 6 GW ${signed(transfer.gain_6)}`;
+    evidence.children[1].textContent = `${signed(transfer.expected_minutes_delta, " xMin")} per GW · ${signed(transfer.fixture_swing)} fixture swing`;
+    card.appendChild(evidence);
+  }
+  return card;
+}
+
 function renderTransferResult(result) {
   const root = $("#transfer-suggestions");
   const comparisonRoot = $("#transfer-route-comparison");
@@ -2066,7 +2106,11 @@ function renderTransferResult(result) {
     return;
   }
   text($("#transfer-context"), `GW${result.planning_event} · ${result.horizon}-GW plan · £${Number(result.bank).toFixed(1)}m bank · ${result.free_transfers} free transfer${result.free_transfers === 1 ? "" : "s"} · ${result.risk_preference}`);
-  text($("#transfer-rule-note"), result.decision_safety === "refresh_required" ? "Recommendations are withheld until official data is refreshed." : `The cards above are alternative single moves, not a combined plan. You gain one free transfer per Gameweek and can bank up to five. With ${result.free_transfers} available now, each move beyond that allowance costs −4 points.${result.decision_safety === "estimate_only" ? " Selling prices are estimated, so confirm affordability in FPL before acting." : ""}`);
+  const finalDecision = result.final_decision;
+  if (finalDecision) root.appendChild(finalDecisionCard(finalDecision, result));
+  text($("#transfer-rule-note"), result.decision_safety === "refresh_required"
+    ? "Recommendations are withheld until official data is refreshed."
+    : "Final weekly action comes from the continuity-first squad optimizer. The transfer cards below are alternative opportunities, not additional instructions.");
   root.title = result.confidence_definition || "";
   const safetyBadge = $("#transfer-reliability");
   if (result.decision_safety === "refresh_required") {

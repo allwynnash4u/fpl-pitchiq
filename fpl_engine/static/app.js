@@ -794,10 +794,24 @@ function renderTeamTransfers() {
     return;
   }
   const suggestions = state.transfers.suggestions;
-  context.textContent = `GW${state.transfers.planning_event} · ${state.transfers.horizon}-GW plan · ${state.transfers.free_transfers} free transfer${state.transfers.free_transfers === 1 ? "" : "s"} · choose one alternative · extra moves −4 pts each${state.transfers.decision_safety === "estimate_only" ? " · affordability estimated" : ""}`;
-  suggestions.slice(0, 3).forEach((suggestion, index) => root.appendChild(transferCard(suggestion, state.transfers.horizon, index + 1)));
+  const finalDecision = state.transfers.final_decision;
+  const finalHold = finalDecision?.action === "hold";
+  context.textContent = finalHold
+    ? `Final action: Do Nothing / Roll · GW${state.transfers.planning_event} · alternatives shown below`
+    : `GW${state.transfers.planning_event} · ${state.transfers.horizon}-GW plan · ${state.transfers.free_transfers} free transfer${state.transfers.free_transfers === 1 ? "" : "s"} · alternatives shown below · extra moves −4 pts each${state.transfers.decision_safety === "estimate_only" ? " · affordability estimated" : ""}`;
+  suggestions.slice(0, 3).forEach((suggestion, index) => {
+    const displaySuggestion = finalHold ? { ...suggestion, recommended: false } : suggestion;
+    root.appendChild(transferCard(displaySuggestion, state.transfers.horizon, index + 1));
+  });
 
   const weaknessCandidate = suggestions.find((suggestion) => suggestion.action === "transfer" && suggestion.recommended);
+  if (finalHold) {
+    const bestAlternative = suggestions.find((suggestion) => suggestion.action === "transfer");
+    weakness.textContent = bestAlternative
+      ? `FINAL DECISION · Do Nothing / Roll. Alternative opportunity: ${bestAlternative.sell.name} → ${bestAlternative.buy.name} (${signed(bestAlternative.net_expected_gain, " pts")} over ${state.transfers.horizon} GWs), not selected by the continuity-first optimizer.`
+      : "FINAL DECISION · Do Nothing / Roll. No positive expected-value legal route is available.";
+    return;
+  }
   if (!weaknessCandidate) {
     const bestAlternative = suggestions.find((suggestion) => suggestion.action === "transfer");
     weakness.textContent = bestAlternative
@@ -808,13 +822,8 @@ function renderTeamTransfers() {
   const sellGap = Number(weaknessCandidate.sell.expected_points || 0);
   const buyGap = Number(weaknessCandidate.buy.expected_points || 0);
   const difference = buyGap - sellGap;
-  weakness.textContent = `BIGGEST WEAKNESS · ${weaknessCandidate.sell.name} (${weaknessCandidate.sell.team}) is projected ${difference >= 0 ? "behind" : "ahead"} the benchmark by ${Math.abs(difference).toFixed(1)} pts over ${state.transfers.horizon} GWs.`;
-  const rec = document.createElement("p");
-  rec.className = "team-weakness-recommendation";
-  rec.textContent = `RECOMMENDED FIX: ${weaknessCandidate.sell.name} → ${weaknessCandidate.buy.name}`;
-  weakness.prepend(rec);
+  weakness.textContent = `FINAL DECISION · ${finalDecision?.title || "Transfer"} · ${weaknessCandidate.sell.name} (${weaknessCandidate.sell.team}) is the current opportunity, projected ${difference >= 0 ? "behind" : "ahead"} the benchmark by ${Math.abs(difference).toFixed(1)} pts over ${state.transfers.horizon} GWs.`;
 }
-
 function setSquadDisplayMode(mode = "pitch") {
   const nextMode = mode === "list" ? "list" : "pitch";
   state.squadDisplayMode = nextMode;
@@ -2120,7 +2129,10 @@ function renderTransferResult(result) {
     safetyBadge.className = "status-pill warning";
     text(safetyBadge, "Price estimate");
   }
-  (result.suggestions || []).forEach((suggestion, index) => root.appendChild(transferCard(suggestion, result.horizon, index + 1)));
+  (result.suggestions || []).forEach((suggestion, index) => {
+    const displaySuggestion = result.final_decision?.action === "hold" ? { ...suggestion, recommended: false } : suggestion;
+    root.appendChild(transferCard(displaySuggestion, result.horizon, index + 1));
+  });
   const comparison = result.route_comparison || {};
   if (comparison.roll && result.decision_safety !== "refresh_required") {
     const title = document.createElement("strong"); title.textContent = "Route comparison · this Gameweek";

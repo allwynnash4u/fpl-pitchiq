@@ -139,8 +139,20 @@ class BacktestService:
             key=lambda player: (float(player.get("expected_points") or 0), float(player.get("confidence") or 0)),
             default=None,
         )
-        suggestions = transfer_result.get("suggestions") or []
-        transfer = suggestions[0] if suggestions else {"action": "unavailable"}
+        final_decision = transfer_result.get("final_decision") or {}
+        if final_decision.get("action") == "hold":
+            transfer = {
+                "action": "do_nothing",
+                "why": final_decision.get("summary") or "Continuity-first optimizer selected a hold.",
+                "net_expected_gain": 0.0,
+                "confidence": final_decision.get("confidence") or 0.0,
+                "hit_cost": 0,
+            }
+        elif final_decision.get("action") == "transfer" and final_decision.get("transfer"):
+            transfer = final_decision["transfer"]
+        else:
+            suggestions = transfer_result.get("suggestions") or []
+            transfer = suggestions[0] if suggestions else {"action": "unavailable"}
         captain_payload = (
             {
                 "id": int(captain["id"]),

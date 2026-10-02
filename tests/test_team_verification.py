@@ -21,7 +21,7 @@ class VerificationTests(unittest.TestCase):
                 {"id": index, "position_id": position, "team_id": index}
                 for index, position in enumerate([1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4], start=1)
             ]
-            repository.profile = lambda: {"team_id": 3484868, "bank": 1.0, "free_transfers": 1, "current_gameweek": 6}
+            repository.profile = lambda: {"team_id": 3484868, "bank": 1.0, "free_transfers": 1, "current_gameweek": 6, "manager": {"bank": 1.0, "free_transfers": 1}}
             repository.squad = lambda: squad
             app = SimpleNamespace(
                 repository=repository,

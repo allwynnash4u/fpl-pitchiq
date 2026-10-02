@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const ENGINE_URL = (process.env.FPL_ENGINE_URL || "https://pitchiq-python-production.up.railway.app").replace(/\\/$/, "");
+const ENGINE_URL = (process.env.FPL_ENGINE_URL || "http://127.0.0.1:8765").replace(/\/$/, "");
 
 export async function GET(_: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;

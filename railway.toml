@@ -1,3 +1,4 @@
 [deploy]
 healthcheckPath = "/api/health"
 healthcheckTimeout = 10
+# Deployment trigger: 2026-10-02

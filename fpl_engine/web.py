@@ -242,6 +242,11 @@ def make_handler(app: Application) -> type[BaseHTTPRequestHandler]:
                     self._json_response(app.chip_planner.plan())
                 elif parsed.path == "/api/transfer-suggestions":
                     suggestions = app.transfer_optimizer.suggestions()
+                    optimized = app.squad_optimizer.optimize()
+                    suggestions["final_decision"] = app.dashboard_service.final_decision(
+                        suggestions,
+                        optimized,
+                    )
                     app.backtest_service.capture_current_decision(suggestions)
                     self._json_response(suggestions)
                 elif parsed.path == "/api/squad-optimizer":

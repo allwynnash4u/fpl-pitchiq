@@ -9,6 +9,7 @@ COPY data /app/data
 ENV PYTHONUNBUFFERED=1
 ENV FPL_HOST=0.0.0.0
 ENV FPL_DATA_DIR=/app/data
+ENV FPL_DEFAULT_TEAM_ID=3484868
 
 RUN mkdir -p /app/data/cache
 

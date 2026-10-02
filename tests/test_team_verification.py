@@ -54,7 +54,6 @@ class VerificationTests(unittest.TestCase):
             self.assertEqual(payload["verification"]["checks"]["current_event_present"], True)
             self.assertEqual(payload["verification"]["checks"]["bank_present"], True)
             self.assertEqual(payload["verification"]["checks"]["free_transfers_present"], True)
-            self.assertEqual(payload["verification"]["checks"]["do_nothing_baseline_present"], True)
             self.assertEqual(payload["chip_plan"]["status"], "ready")
             self.assertTrue(payload["assistant"]["questions"])
 

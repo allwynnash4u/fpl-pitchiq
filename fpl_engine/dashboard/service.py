@@ -107,7 +107,11 @@ class DashboardService:
         }
 
     @staticmethod
-    def _decision(transfers: dict[str, Any]) -> dict[str, Any]:
+    def final_decision(
+        transfers: dict[str, Any],
+        optimized: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Return the single actionable decision shared by every decision surface."""
         suggestions = transfers.get("suggestions") or []
         if not suggestions:
             return {
@@ -116,6 +120,7 @@ class DashboardService:
                 "summary": transfers.get("message") or "Import a squad to unlock a team-specific decision.",
                 "net_gain": 0.0,
                 "confidence": 0.0,
+                "source": "decision_gate",
             }
         if transfers.get("decision_safety") == "refresh_required":
             return {
@@ -124,15 +129,93 @@ class DashboardService:
                 "summary": " ".join(transfers.get("data_warnings") or []) or "Confirm your team context before acting.",
                 "net_gain": 0.0,
                 "confidence": 0.0,
+                "source": "decision_gate",
             }
+
+        comparison = (optimized or {}).get("comparison") or {}
+        if (optimized or {}).get("status") == "ready" and bool(comparison.get("has_imported_squad")):
+            changes = int(comparison.get("changes") or 0)
+            penalty = float((optimized or {}).get("continuity_penalty_per_change") or 0)
+            if changes == 0:
+                return {
+                    "action": "hold",
+                    "title": "Do Nothing / Roll",
+                    "summary": (
+                        f"The continuity-first squad optimizer keeps all {int(comparison.get('players_kept') or 0)} "
+                        f"current players. No transfer is selected after applying the {penalty:.1f}-point "
+                        "continuity penalty."
+                    ),
+                    "net_gain": 0.0,
+                    "confidence": float((optimized or {}).get("confidence") or 0),
+                    "source": "squad_optimizer",
+                    "changes": 0,
+                    "continuity_penalty": penalty,
+                    "opportunity": suggestions[0],
+                }
+
+            outs = comparison.get("transfers_out") or []
+            ins = comparison.get("transfers_in") or []
+            transfer = None
+            if len(outs) == 1 and len(ins) == 1:
+                out_id = int(outs[0].get("id"))
+                in_id = int(ins[0].get("id"))
+                transfer = next(
+                    (
+                        suggestion
+                        for suggestion in suggestions
+                        if suggestion.get("action") == "transfer"
+                        and int((suggestion.get("sell") or {}).get("id") or -1) == out_id
+                        and int((suggestion.get("buy") or {}).get("id") or -1) == in_id
+                    ),
+                    None,
+                )
+            if transfer:
+                summary = transfer.get("why") or "Selected by the continuity-first squad optimizer."
+                if transfers.get("decision_safety") == "estimate_only":
+                    summary += " Affordability uses an estimated selling price; check the exact price in FPL before acting."
+                return {
+                    "action": "transfer",
+                    "title": f"{transfer['sell']['name']} → {transfer['buy']['name']}",
+                    "summary": summary,
+                    "net_gain": float(transfer.get("net_expected_gain") or 0),
+                    "confidence": float(transfer.get("confidence") or 0),
+                    "sell": transfer.get("sell"),
+                    "buy": transfer.get("buy"),
+                    "transfer": transfer,
+                    "gain_3": float(transfer.get("gain_3") or 0),
+                    "gain_6": float(transfer.get("gain_6") or 0),
+                    "bank_after": float(transfer.get("bank_after") or 0),
+                    "source": "squad_optimizer",
+                    "changes": changes,
+                    "continuity_penalty": penalty,
+                }
+
+            names_out = ", ".join(str(item.get("name") or "—") for item in outs) or "—"
+            names_in = ", ".join(str(item.get("name") or "—") for item in ins) or "—"
+            return {
+                "action": "transfer",
+                "title": f"Optimizer changes: {names_out} → {names_in}",
+                "summary": "The continuity-first squad optimizer selected this legal squad change. The opportunity cards below may not contain an exact matching route.",
+                "net_gain": 0.0,
+                "confidence": float((optimized or {}).get("confidence") or 0),
+                "sell": outs[0] if len(outs) == 1 else None,
+                "buy": ins[0] if len(ins) == 1 else None,
+                "source": "squad_optimizer",
+                "changes": changes,
+                "continuity_penalty": penalty,
+            }
+
+        # Fallback for incomplete optimizer output: use the transfer engine's baseline.
         best = suggestions[0]
         if best.get("action") == "do_nothing":
             return {
                 "action": "hold",
-                "title": "Do Nothing",
+                "title": "Do Nothing / Roll",
                 "summary": best.get("why") or "No transfer clears the action threshold.",
                 "net_gain": 0.0,
                 "confidence": float(best.get("confidence") or 0),
+                "source": "transfer_optimizer",
+                "opportunity": best,
             }
         return {
             "action": "transfer",
@@ -145,10 +228,17 @@ class DashboardService:
             "confidence": float(best.get("confidence") or 0),
             "sell": best.get("sell"),
             "buy": best.get("buy"),
+            "transfer": best,
             "gain_3": float(best.get("gain_3") or 0),
             "gain_6": float(best.get("gain_6") or 0),
             "bank_after": float(best.get("bank_after") or 0),
+            "source": "transfer_optimizer",
+            "opportunity": best,
         }
+
+    @staticmethod
+    def _decision(transfers: dict[str, Any], optimized: dict[str, Any] | None = None) -> dict[str, Any]:
+        return DashboardService.final_decision(transfers, optimized)
 
     def build(self, *, horizon: int | None = None, risk: str | None = None) -> dict[str, Any]:
         profile = self.repository.profile() or {}
@@ -279,7 +369,7 @@ class DashboardService:
                 "imported_gameweek": profile.get("imported_gameweek"),
                 "squad_connected": len(squad) == 15,
             },
-            "decision": self._decision(transfer_result),
+            "decision": self._decision(transfer_result, optimized),
             "current_squad": {
                 "players": len(squad),
                 "starters": len(starters),
@@ -294,7 +384,7 @@ class DashboardService:
                 },
             },
             "squad_rating": squad_rating,
-            "transfers": transfer_result,
+            "transfers": {**transfer_result, "final_decision": self.final_decision(transfer_result, optimized)},
             "optimized_squad": {
                 "status": optimized.get("status"),
                 "formation": optimized.get("formation"),
